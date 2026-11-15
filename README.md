@@ -15,9 +15,9 @@ money until payout. If they vanish, get sick, or spend it, there's no
 recourse — which is why these circles rarely extend past people who already
 know and trust each other.
 
-Ajo keeps the mechanic and removes that single point of failure. A Soroban
-smart contract custodies the pot instead of a person, enforces the
-contribution schedule, and pays out automatically — trustless by
+Ajo keeps the mechanic and removes that custodial single point of failure. A
+Soroban smart contract custodies the pot instead of a person, enforces the
+contribution schedule, and pays out automatically — non-custodial by
 construction, not by promise.
 
 - **Network:** Stellar / Soroban, testnet
@@ -34,8 +34,35 @@ construction, not by promise.
    never takes custody of a private key.
 3. **The contract pays out automatically.** As soon as every member has
    contributed (or the cycle deadline passes, so one non-payer can't freeze
-   everyone else's money), the contract releases the full pot to that
+   everyone else's money), the contract releases the collected pot to that
    cycle's member. No organizer collects or distributes anything by hand.
+
+## Custodial trust vs. member defection (Important limitation)
+
+Ajo eliminates **custodial risk** — no organizer or backend ever holds the pot
+or can abscond with collected funds — but it does **not** eliminate **member
+defection risk**:
+
+- **No collateral or slashing:** Joining a circle does not require locking a
+  security deposit, and `missed_count` strikes recorded when a cycle deadline
+  passes without a member's contribution are **informational only**.
+- **Non-payers still receive their turn's pot:** `disburse` selects each
+  cycle's recipient strictly by join index (`circle.members.get(circle.current_cycle)`
+  in `contracts/ajo-circle/src/lib.rs`). A member who skips contributions in
+  earlier cycles and accumulates strikes is **not** disqualified or docked; if
+  other members continue contributing when that member's index comes up, the
+  non-payer still receives the full pot collected for that cycle.
+- **Early recipients can stop paying later cycles:** Similarly, a member who
+  is paid in an early cycle (e.g., index `0`) faces no on-chain financial
+  penalty for skipping subsequent cycles beyond incrementing their public
+  `missed_count`, which reduces later cycles' payouts to whatever the
+  remaining honest members contribute.
+
+Because there is currently no on-chain penalty or payout deduction for missed
+contributions, **you should only join circles with participants you trust not
+to defect**, just as in a traditional ROSCA — using the contract to guarantee
+transparent, non-custodial custody of the pot rather than to enforce credit
+among strangers.
 
 ## Why this belongs on Stellar
 
